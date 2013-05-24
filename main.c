@@ -11,16 +11,16 @@
 // main()
 //
 /////////////////////////////
-int main()
-{
+int main(){
   WDTCTL = WDTPW + WDTHOLD; //Stop WDT
+  // Configure DCO
   if (CALBC1_8MHZ == 0XFF){
     while(1);
   }
   DCOCTL = 0;
   BCSCTL1 = CALBC1_8MHZ;
   DCOCTL = CALDCO_8MHZ;
-
+  // Configure Timer A
   TA0CTL = TASSEL_2 + MC_2 + ID_3; // Set timer to count SMCLK
                                    // Set mode to count UP to CCR0 value
                                    // Divide the 1MHz clock by 8 = 125kHz
@@ -45,28 +45,29 @@ int main()
   //
   // Configure the three two thermostat push buttons
   //
-//   P2SEL = 0x00;
-//   P2SEL2 = 0x00;
-//   P2REN |= (TEMP_UP | TEMP_DWN | ON_OFF);
-//   P2IE  |=  (TEMP_UP | TEMP_DWN | ON_OFF);
-//   P2IES |= (TEMP_UP | TEMP_DWN | ON_OFF);
+  P2SEL = 0x00;
+  P2SEL2 = 0x00;
+  P2REN |= (TEMP_UP | TEMP_DWN);
+  P2IE  |= (TEMP_UP | TEMP_DWN);
+  P2IES |= (TEMP_UP | TEMP_DWN);
   //
   // Configure the relay control pin
   //
-//   P2OUT |= RELAY_CTL;
-//   P2DIR |= RELAY_CTL;
+   P2OUT |= RELAY_CTL;
+   P2DIR |= RELAY_CTL;
   //
   // Get the temperature, set threshold values, enable
   // interrupts, enter LPM0 (CPU off; SMCLK, ACLK, DCO on)
   //
   getTemp();
-//  getAndSetThresholds();
-//  _enable_interrupt();
-  P2OUT &= ~BIT3;
-  P2DIR |= BIT3;
   _low_power_mode_0();
   return 0;
 }
+//////////////////////////////////
+//
+// Function Definitions
+//
+//////////////////////////////////
 /**
   * void getTemp()
   *   Retrieves the temperature stored in the first two bytes of the DS18B20's
@@ -80,9 +81,9 @@ void getTemp(){
    onewire_reset(&ow);
    onewire_write_byte(&ow, SKIP_ROM);
    onewire_write_byte(&ow, T_CONVER);
-
+   // Wait for temperature conversion to complete
    while (!onewire_read_byte(&ow));
-
+   // Read temperature from sensor scratchpad
    onewire_reset(&ow);
    onewire_write_byte(&ow, SKIP_ROM);
    onewire_write_byte(&ow, READ_SP);
@@ -90,8 +91,16 @@ void getTemp(){
    upper_temp = onewire_read_byte(&ow);
    onewire_reset(&ow);
    DELAY_MS(200);
+   // Convert C data from sensor to F
    temp = ((upper_temp << 4) | (lower_temp >> 4));
    farenheight = ((temp * 9) / 5) + 32;
+   // Hard coded thermostat logic
+   if (farenheight > thres_temp){
+    RELAY_ON;
+   }
+   else{
+    RELAY_OFF;
+   }
    char temperature[16];
    sprintf(temperature, "Temp: %d%cF   ", farenheight, 0xDF);
    lcd_goHome();
@@ -99,28 +108,11 @@ void getTemp(){
    lcd_printString(temperature, NO_DELAY, TOP_LINE);
    return;
 }
-/**
-  * void getAndSetThresholds()
-  *   Called when pushbuttons on port 2 are pressed--user changing thermostat
-  *   settings.  Retrieves the current flag status from the DS18B20, and changes
-  *   the relay control pin accordingly
-  * Parameters:
-  *   none
-  * Returns:
-  *   void
-  **/
-void getAndSetThresholds(){
-  // Write the three configuration bytes to the scratchpad
-  onewire_reset(&ow);
-  onewire_write_byte(&ow, SKIP_ROM);
-  onewire_write_byte(&ow, upper_temp);
-  onewire_write_byte(&ow, lower_temp);
-  onewire_write_byte(&ow, CONFIG_BYTE);
-  // Update the temperature reading on the display
-  getTemp();
-  // Check for alarm status on the DS18B20, and change relay accordingly
-}
-
+//////////////////////////////////
+//
+// Interrupt Service Routines
+//
+//////////////////////////////////
 /**
   * TIMER0_A0_VECTOR: Timer A Interrupt Service Routine
   *     ISR for Timer A.  Called every 1.6 seconds--ensures 8Mhz MCLK,
@@ -128,6 +120,8 @@ void getAndSetThresholds(){
   **/
 #pragma vector = TIMER0_A0_VECTOR
 __interrupt void timerAISR(){
+  // Reset WDT just in case
+	WDTCTL = WDTPW + WDTHOLD;
   // Disable nested interrupts
    _disable_interrupt();
   // Ensure 8Mhz clock
@@ -179,16 +173,6 @@ __interrupt void port2ISR(){
     onewire_write_byte(&ow, thres_temp);     // Transmit Th byte
     onewire_write_byte(&ow, thres_temp - 2); // Transmit Tl byte
     onewire_write_byte(&ow, CONFIG_BYTE);    // Transmit config byte
-  }
-  else if (P2IFG & ON_OFF){
-    if (!is_relay_on){
-      is_relay_on = TRUE;
-      RELAY_ON;
-    }
-    else{
-      is_relay_on = FALSE;
-      RELAY_OFF;
-    }
   }
   else;
   // Re-enable interrupts, and leave ISR, returning to LMP0

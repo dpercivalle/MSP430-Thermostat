@@ -24,17 +24,16 @@
 #define ALARM_SRCH  0xEC
 #define RECALL_E2   0xB8
 #define CPY_SP      0x48
-#define TEMP_UP     BIT3
-#define TEMP_DWN    BIT4
-#define ON_OFF      BIT6
-#define RELAY_CTL   BIT7
-#define RELAY_ON    (P2OUT &= ~BIT7)
-#define RELAY_OFF   (P2OUT |= BIT7)
+#define TEMP_UP     BIT6
+#define TEMP_DWN    BIT7
+#define RELAY_CTL   BIT3
+#define RELAY_ON    (P2OUT &= ~BIT3)
+#define RELAY_OFF   (P2OUT |= BIT3)
 
 #define TRUE        1
 #define FALSE       0
 
-static volatile uint8_t thres_temp = 0;
+static volatile uint8_t thres_temp = 81;
 static volatile uint8_t lower_temp = 0;
 static volatile uint8_t upper_temp = 0;
 static volatile uint8_t temp = 0;
@@ -44,7 +43,6 @@ static onewire_t ow;
 
 // Function prototypes
 void getTemp();
-void getAndSetThresholds();
 
 // main Function definition
 
