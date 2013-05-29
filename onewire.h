@@ -1,8 +1,9 @@
 /*
- * 1-Wire implementation for MSP430
+ * CPE329-07/08 | Project 3 - Environmental Sensing
+ * Header file for one-wire library
  *
- * @author: David Siroky <siroky@dasir.cz>
- * @license: MIT
+ * @author Donny Percivalle
+ *         Alex Lin
  */
 
 #ifndef __ONEWIRE_H
@@ -10,6 +11,9 @@
 
 #include <stdint.h>
 
+//
+// One-wire peripheral struct definition
+//   
 typedef struct {
     volatile uint8_t *port_out;
     const volatile uint8_t *port_in;
@@ -18,8 +22,9 @@ typedef struct {
     int pin;
   } onewire_t;
 
-//########################################################################
-
+//
+// Function prototypes
+//
 int onewire_reset(onewire_t *ow);
 void onewire_write_bit(onewire_t *ow, int bit);
 int onewire_read_bit(onewire_t *ow);

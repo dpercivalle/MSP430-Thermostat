@@ -1,8 +1,9 @@
 /*
- * 1-Wire implementation for MSP430
+ * CPE329-07/08 | Project 3 - Environmental Sensing
+ * One-wire interface delay definitions
  *
- * @author: David Siroky <siroky@dasir.cz>
- * @license: MIT
+ * @author: Donny Percivalle
+ *          Alex Lin
  */
 
 #ifndef __DELAY_H

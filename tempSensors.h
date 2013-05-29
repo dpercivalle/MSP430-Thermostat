@@ -36,6 +36,7 @@
 static volatile uint8_t thres_temp = 81;
 static volatile uint8_t lower_temp = 0;
 static volatile uint8_t upper_temp = 0;
+static volatile uint8_t timer_counts = 0;
 static volatile uint8_t temp = 0;
 static volatile int is_relay_on = FALSE;
 static volatile unsigned int farenheight = 0;
@@ -43,9 +44,5 @@ static onewire_t ow;
 
 // Function prototypes
 void getTemp();
-
-// main Function definition
-
-
 
 #endif /* TEMPSENSORS_H_ */
